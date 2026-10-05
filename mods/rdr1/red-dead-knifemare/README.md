@@ -125,9 +125,9 @@ The ASI does not edit `fragments.rpf` or the physical throwing-knife model. The 
 The existing RDR1 throwing-knife weapon enum remains unchanged, but Knifemare presents that slot as **Assassin Knife**.
 
 - The display and weapon-wheel labels use the same paired localization-buffer override pattern proven by Red Dead Possession. `Assassin Knife` is the same length as `Throwing Knife`, so the existing English buffers can be reused without resizing them.
-- The repository bundles two prepared red, stock-identity replacements at `assets\streaming\assassin_knife_ui_wtds.zip`: `radial_thrn_knife.wtd` for the weapon wheel and `weapons_thrn_knife.wtd` for **Weapons -> Organize and Compare**.
+- The repository stores two prepared red, stock-identity replacements directly under `assets\streaming\assassin_knife_ui_wtds\`: `radial_thrn_knife.wtd` for the weapon wheel and `weapons_thrn_knife.wtd` for **Weapons -> Organize and Compare**.
 - Those replacements preserve the stock WTD filenames, internal resource identities, dimensions, mipmaps and texture formats. Only the Throwing Knife artwork color is changed to red.
-- Deployment extracts the prepared bundle and passes only those two WTDs directly to MagicRDR. It does not build or recolor WTDs on the player's machine.
+- Release packaging reads those two checked-in WTDs directly and passes only them to MagicRDR. It does not use a nested asset ZIP and does not build or recolor WTDs on the player's machine.
 - MagicRDR replaces only those two Throwing Knife entries in the managed `update\game\mapres.rpf` copy. Rockstar's original `game\mapres.rpf` remains a read-only source.
 - Knifemare uses the same Ultimate ASI Loader update-folder path and ownership/backup safety model as Red Dead Possession.
 - Deploy and undeploy restore any pre-existing update archive / `wininet.dll` / `wininet.ini` only when the saved ownership hashes still match.
