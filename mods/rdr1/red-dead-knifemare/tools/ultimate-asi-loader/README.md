@@ -1,42 +1,69 @@
-# Ultimate ASI Loader startup dependency
+# Ultimate ASI Loader dependency
 
-Red Dead Possession issue #104 uses the repository's x64 UAL 7.7.0
-`wininet.dll` from the supplied Colorized Weapon Wheel Icons package.
-Its SHA-256 is `BB8767F918C52A2AD055D2DE9BAFFD2478598643B9894F09ABD20D1F1FFD170C`.
-No downloader is used. The existing game-root `dinput8.dll` stays untouched.
+Red Dead Knifemare includes the repository's x64 Ultimate ASI Loader 7.7.0 `wininet.dll` for the `update`-folder file-overload path used by the Assassin Knife UI.
 
-Copying wininet.dll alone did not load it in the user's runtime. The ASI now
-imports `IsUltimateASILoader` through a small MSVC-generated import library.
-This is a normal, non-delayed dependency: Windows must load UAL before entering
-RedDeadPossession's DllMain, rather than waiting for ScriptMain or an incidental
-game import. The ASI therefore requires the deployed UAL DLL; a missing DLL or
-one without that export prevents this candidate ASI from loading. If no new
-Possession trace appears, send the deployment and ScriptHook logs.
+The packaged `wininet.dll` SHA-256 is:
 
-`wininet.ini` configures UAL for file overloading only (`LoadPlugins=0`), keeping
-ASI discovery with the existing dinput8 loader. `DontLoadFromDllMain=1` leaves
-UAL's normal deferred file-hook setup enabled. Do not change that setting to
-zero: UAL 7.7 installs the global file hooks through its deferred path.
-The mapping remains `game\mapres.rpf` -> `update\game\mapres.rpf`.
+```text
+BB8767F918C52A2AD055D2DE9BAFFD2478598643B9894F09ABD20D1F1FFD170C
+```
 
-UAL 7.7 reads game-root, scripts, plugins and update `global.ini` files after
-wininet.ini. Deployment refuses conflicting relevant settings in those files
-and leaves them untouched. It backs up a pre-existing wininet.ini, tracks the
-DLL and INI hashes in version 2 of
-`RedDeadPossessionAssets\possessor-wininet-state.json`, and supports upgrading
-version-1 DLL-only ownership. Undeploy restores original files or removes only
-unchanged mod-installed copies. Version-1 undeployment never touches the INI.
+No downloader is used for Ultimate ASI Loader. The existing game-root `dinput8.dll` remains responsible for normal ASI plugin loading and is not replaced by Knifemare.
 
-Runtime evidence is deliberately separated:
+## Why Knifemare imports Ultimate ASI Loader
 
-- `STARTUP imported wininet IsUltimateASILoader = 1`: dependency loaded before
-  ASI script registration.
-- `module=wininet.dll loaded=1 ... ual=1`: loaded module identity/path.
-- `overload-root-status=api-unavailable`: expected for UAL 7.7; it has no
-  `GetOverloadPathW` export and this is not an "overloading disabled" result.
-- `mapres-mapped=1`: the mapping API predicts the update archive.
-- `mapres-open-update=1`: a read-only Win32 open actually resolved to the update
-  archive. This does not by itself prove which archive RAGE already mounted.
+Knifemare stores its modified UI archive at:
 
-Upstream source: https://github.com/ThirteenAG/Ultimate-ASI-Loader/blob/v7.7.0/source/dllmain.cpp
-License: MIT (see LICENSE.txt).
+```text
+update\game\mapres.rpf
+```
+
+The ASI imports `IsUltimateASILoader` through a small MSVC-generated import library. This is a normal, non-delayed dependency, so Windows loads the packaged `wininet.dll` before entering `RedDeadKnifemare.asi`'s `DllMain`.
+
+That makes the file-overload dependency explicit instead of relying on an incidental game import. If the required UAL DLL is missing, or does not export `IsUltimateASILoader`, the Knifemare ASI will not load.
+
+## Configuration
+
+`wininet.ini` configures Ultimate ASI Loader for file overloading only:
+
+```ini
+[GlobalSets]
+LoadPlugins=0
+DontLoadFromDllMain=1
+ForceEntryPointHook=0
+LoadFromAPI=
+FindModule=0
+
+[FileLoader]
+OverloadFromFolder=update
+```
+
+`LoadPlugins=0` leaves ASI discovery with the existing `dinput8.dll` loader.
+
+`DontLoadFromDllMain=1` keeps Ultimate ASI Loader's normal deferred file-hook setup enabled. The effective mapping used by Knifemare is:
+
+```text
+game\mapres.rpf -> update\game\mapres.rpf
+```
+
+## Install and uninstall ownership
+
+The Knifemare release package includes:
+
+- `wininet.dll`
+- `wininet.ini`
+- `LICENSE.txt`
+
+During installation, Knifemare backs up any pre-existing game-root `wininet.dll` and `wininet.ini`, installs the packaged copies, verifies their SHA-256 hashes, and records the installed state in:
+
+```text
+RedDeadKnifemareAssets\release-install-state.json
+```
+
+Uninstall verifies the tracked installed files before restoring the pre-install copies or removing files that did not exist before Knifemare was installed. This prevents the uninstaller from overwriting a loader/configuration that was changed after installation.
+
+Upstream project: https://github.com/ThirteenAG/Ultimate-ASI-Loader
+
+Version used here: 7.7.0
+
+License: MIT (see `LICENSE.txt`).
