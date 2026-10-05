@@ -51,6 +51,7 @@ $Radial = Join-Path $UiAssetDir "radial_thrn_knife.wtd"
 $Manual = Join-Path $UiAssetDir "weapons_thrn_knife.wtd"
 $UalDll = Join-Path $ModDir "tools\ultimate-asi-loader\wininet.dll"
 $UalIni = Join-Path $ModDir "tools\ultimate-asi-loader\wininet.ini"
+$UalLicense = Join-Path $ModDir "tools\ultimate-asi-loader\LICENSE.txt"
 $MagicRdrUrl = "https://github.com/Foxxyyy/Magic-RDR/releases"
 
 Require-File $VersionFile "VERSION file"
@@ -67,6 +68,7 @@ Require-File $Radial "radial_thrn_knife.wtd"
 Require-File $Manual "weapons_thrn_knife.wtd"
 Require-File $UalDll "Ultimate ASI Loader wininet.dll"
 Require-File $UalIni "Ultimate ASI Loader wininet.ini"
+Require-File $UalLicense "Ultimate ASI Loader LICENSE.txt"
 
 $Version = (Get-Content -LiteralPath $VersionFile -Raw).Trim()
 if ($Version -notmatch '^(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)$') { throw "Invalid semantic VERSION: '$Version'" }
@@ -148,6 +150,7 @@ Copy-Item -LiteralPath $Radial -Destination (Join-Path $AssetsStage "radial_thrn
 Copy-Item -LiteralPath $Manual -Destination (Join-Path $AssetsStage "weapons_thrn_knife.wtd") -Force
 Copy-Item -LiteralPath $UalDll -Destination (Join-Path $UalStage "wininet.dll") -Force
 Copy-Item -LiteralPath $UalIni -Destination (Join-Path $UalStage "wininet.ini") -Force
+Copy-Item -LiteralPath $UalLicense -Destination (Join-Path $UalStage "LICENSE.txt") -Force
 
 $MagicInstructions = @"
 MagicRDR is required to install the mandatory Assassin Knife UI, but it is not redistributed in this package.
@@ -186,7 +189,8 @@ foreach ($Required in @(
     (Join-Path $AssetsStage "weapons_thrn_knife.wtd"),
     (Join-Path $MagicStage "DOWNLOAD-MAGICRDR.txt"),
     (Join-Path $UalStage "wininet.dll"),
-    (Join-Path $UalStage "wininet.ini")
+    (Join-Path $UalStage "wininet.ini"),
+    (Join-Path $UalStage "LICENSE.txt")
 )) { Require-File $Required "Required staged file" }
 
 $NestedArchives = @(Get-ChildItem -LiteralPath $StageDir -Recurse -File | Where-Object { $_.Extension -in @(".zip", ".7z", ".rar", ".tar", ".gz") })
