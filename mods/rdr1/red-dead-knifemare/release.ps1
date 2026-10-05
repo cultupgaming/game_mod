@@ -1,7 +1,6 @@
 param(
     [string]$SdkDir = "C:\modding\RDR1-SDK",
     [switch]$AllowNonMain,
-    [switch]$AllowDirty,
     [switch]$Force
 )
 
@@ -53,6 +52,8 @@ $UalDll = Join-Path $ModDir "tools\ultimate-asi-loader\wininet.dll"
 $UalIni = Join-Path $ModDir "tools\ultimate-asi-loader\wininet.ini"
 $UalLicense = Join-Path $ModDir "tools\ultimate-asi-loader\LICENSE.txt"
 $MagicRdrUrl = "https://github.com/Foxxyyy/Magic-RDR/releases"
+$PublicRepoUrl = "https://github.com/cultupgaming/game_mod.git"
+$PublicRepoBrowseUrl = "https://github.com/cultupgaming/game_mod"
 
 Require-File $VersionFile "VERSION file"
 Require-File $TraceSource "trace.cpp"
@@ -78,13 +79,30 @@ if ([string]::IsNullOrWhiteSpace($Branch)) { throw "Repository is in detached HE
 if ($Branch -ne "main" -and -not $AllowNonMain) { throw "Release packaging is restricted to main. Use -AllowNonMain only to test this script before merge." }
 
 $Dirty = @(git -C $RepoDir status --short)
-if ($Dirty.Count -gt 0 -and -not $AllowDirty) {
+if ($Dirty.Count -gt 0) {
     $Dirty | ForEach-Object { Write-Host "  $_" }
-    throw "Working tree is not clean."
+    throw "Working tree is not clean. Exact-source release packaging requires committed source only."
 }
 
 $Commit = (& git -C $RepoDir rev-parse HEAD).Trim()
 $ShortCommit = (& git -C $RepoDir rev-parse --short HEAD).Trim()
+if ($Commit -notmatch '^[0-9a-fA-F]{40}$') { throw "Could not resolve a full 40-character source commit SHA." }
+
+Step "Verifying exact public source commit"
+$PublicBranchRef = "refs/heads/$Branch"
+$PublicRefText = (& git ls-remote $PublicRepoUrl $PublicBranchRef | Out-String).Trim()
+if ($LASTEXITCODE -ne 0) { throw "Could not query the public source repository: $PublicRepoBrowseUrl" }
+if ([string]::IsNullOrWhiteSpace($PublicRefText)) {
+    throw "Public branch '$Branch' was not found in $PublicRepoBrowseUrl. Push this exact branch before packaging."
+}
+$PublicCommit = (($PublicRefText -split '\s+')[0]).Trim()
+if ($PublicCommit -notmatch '^[0-9a-fA-F]{40}$') { throw "Could not resolve the public commit for $PublicBranchRef." }
+if ($PublicCommit -ne $Commit) {
+    throw "Release blocked: local commit $Commit does not match published public $PublicBranchRef ($PublicCommit). Push the exact commit and retry."
+}
+$ExactSourceUrl = "$PublicRepoBrowseUrl/tree/$Commit/mods/rdr1/red-dead-knifemare"
+Write-Host "Verified public source: $PublicBranchRef -> $Commit"
+Write-Host "Exact source URL: $ExactSourceUrl"
 
 $TraceText = Get-Content -LiteralPath $TraceSource -Raw
 if (-not $TraceText.Contains("constexpr bool TRACE_ENABLED = false;") -or $TraceText.Contains("constexpr bool TRACE_ENABLED = true;")) {
@@ -169,7 +187,11 @@ Set-Content -LiteralPath (Join-Path $MagicStage "DOWNLOAD-MAGICRDR.txt") -Value 
 $SourceText = @"
 Red Dead Knifemare v$Version
 Source commit: $Commit
-Source code: https://github.com/cultupgaming/game_mod/tree/main/mods/rdr1/red-dead-knifemare
+Exact source: $ExactSourceUrl
+Public repository: $PublicRepoBrowseUrl
+Verified public ref: $PublicBranchRef
+
+The release script verified that the local build commit exactly matched the published public ref above before building the package.
 
 The Assassin Knife UI is mandatory for this release.
 MagicRDR is intentionally not redistributed. Users must download it from:
@@ -229,6 +251,8 @@ $ZipSize = (Get-Item -LiteralPath $ArchivePath).Length
 Step "Release package ready"
 Write-Host "Red Dead Knifemare v$Version"
 Write-Host "Source commit: $ShortCommit ($Commit)"
+Write-Host "Exact source: $ExactSourceUrl"
+Write-Host "Verified public ref: $PublicBranchRef"
 Write-Host "Package: $ArchivePath"
 Write-Host "Size: $ZipSize bytes"
 Write-Host "ASI SHA256: $AsiHash"
