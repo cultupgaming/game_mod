@@ -31,7 +31,6 @@ Step "Validating Red Dead Knifemare release inputs"
 Require-Command "git"
 Require-Command "cmake"
 Require-Command "Compress-Archive"
-Require-Command "Expand-Archive"
 
 $ModDir = $PSScriptRoot
 $RepoDir = (& git -C $ModDir rev-parse --show-toplevel).Trim()
@@ -47,7 +46,9 @@ $InstallBatSource = Join-Path $ModDir "release\Install.bat"
 $UninstallBatSource = Join-Path $ModDir "release\Uninstall.bat"
 $InstallPsSource = Join-Path $ModDir "release\installer\install.ps1"
 $UninstallPsSource = Join-Path $ModDir "release\installer\uninstall.ps1"
-$UiBundle = Join-Path $ModDir "assets\streaming\assassin_knife_ui_wtds.zip"
+$UiAssetDir = Join-Path $ModDir "assets\streaming\assassin_knife_ui_wtds"
+$Radial = Join-Path $UiAssetDir "radial_thrn_knife.wtd"
+$Manual = Join-Path $UiAssetDir "weapons_thrn_knife.wtd"
 $UalDll = Join-Path $ModDir "tools\ultimate-asi-loader\wininet.dll"
 $UalIni = Join-Path $ModDir "tools\ultimate-asi-loader\wininet.ini"
 $MagicRdrUrl = "https://github.com/Foxxyyy/Magic-RDR/releases"
@@ -61,7 +62,9 @@ Require-File $InstallBatSource "Install.bat"
 Require-File $UninstallBatSource "Uninstall.bat"
 Require-File $InstallPsSource "release install.ps1"
 Require-File $UninstallPsSource "release uninstall.ps1"
-Require-File $UiBundle "Assassin Knife UI bundle"
+if (-not (Test-Path -LiteralPath $UiAssetDir -PathType Container)) { throw "Assassin Knife UI asset directory not found: $UiAssetDir" }
+Require-File $Radial "radial_thrn_knife.wtd"
+Require-File $Manual "weapons_thrn_knife.wtd"
 Require-File $UalDll "Ultimate ASI Loader wininet.dll"
 Require-File $UalIni "Ultimate ASI Loader wininet.ini"
 
@@ -101,7 +104,6 @@ Require-File (Join-Path $SdkDir "lib\ScriptHookRDR.lib") "ScriptHookRDR.lib"
 $BuildRoot = Join-Path $ModDir "build"
 $BuildDir = Join-Path $BuildRoot "release-cmake"
 $StageDir = Join-Path $BuildRoot "release-stage"
-$AssetCheckDir = Join-Path $BuildRoot "release-asset-check"
 $ArchivePath = Join-Path (Join-Path $ModDir "release") "Red-Dead-Knifemare-v$Version.zip"
 
 if (Test-Path -LiteralPath $ArchivePath -PathType Leaf) {
@@ -110,15 +112,8 @@ if (Test-Path -LiteralPath $ArchivePath -PathType Leaf) {
 }
 
 Step "Verifying mandatory Assassin Knife UI payload"
-if (Test-Path -LiteralPath $AssetCheckDir) { Remove-Item -LiteralPath $AssetCheckDir -Recurse -Force }
-New-Item -ItemType Directory -Path $AssetCheckDir -Force | Out-Null
-Expand-Archive -LiteralPath $UiBundle -DestinationPath $AssetCheckDir -Force
-$UiFiles = @(Get-ChildItem -LiteralPath $AssetCheckDir -File)
-if ($UiFiles.Count -ne 2) { throw "Assassin Knife UI bundle must contain exactly two WTD files." }
-$Radial = Join-Path $AssetCheckDir "radial_thrn_knife.wtd"
-$Manual = Join-Path $AssetCheckDir "weapons_thrn_knife.wtd"
-Require-File $Radial "radial_thrn_knife.wtd"
-Require-File $Manual "weapons_thrn_knife.wtd"
+$UiFiles = @(Get-ChildItem -LiteralPath $UiAssetDir -File -Filter "*.wtd")
+if ($UiFiles.Count -ne 2) { throw "Assassin Knife UI asset directory must contain exactly two WTD files." }
 if ((Get-FileHash -LiteralPath $Radial -Algorithm SHA256).Hash -ne "F171C489A236AC9DCD358FAFEB7DFB4268AA96AA048D2CE9FE221119FD405BAA") { throw "Unexpected radial WTD hash." }
 if ((Get-FileHash -LiteralPath $Manual -Algorithm SHA256).Hash -ne "946CB5DD359398A65EE5CE14C7FC40F1EF63647FD728E306EF57A5E1FC4F29D5") { throw "Unexpected weapons WTD hash." }
 
