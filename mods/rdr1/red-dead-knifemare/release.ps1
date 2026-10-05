@@ -90,7 +90,7 @@ if ($Commit -notmatch '^[0-9a-fA-F]{40}$') { throw "Could not resolve a full 40-
 
 Step "Verifying exact public source commit"
 $PublicBranchRef = "refs/heads/$Branch"
-$PublicRefText = (& git ls-remote $PublicRepoUrl $PublicBranchRef 2>&1 | Out-String).Trim()
+$PublicRefText = (& git ls-remote $PublicRepoUrl $PublicBranchRef | Out-String).Trim()
 if ($LASTEXITCODE -ne 0) { throw "Could not query the public source repository: $PublicRepoBrowseUrl" }
 if ([string]::IsNullOrWhiteSpace($PublicRefText)) {
     throw "Public branch '$Branch' was not found in $PublicRepoBrowseUrl. Push this exact branch before packaging."
