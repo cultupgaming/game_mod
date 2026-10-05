@@ -146,11 +146,13 @@ The installer intentionally does not perform an in-place update. If a Knifemare 
 
 ## Source Code
 
-Source code:
+Public source repository:
 
-https://github.com/cultupgaming/game_mod/tree/main/mods/rdr1/red-dead-knifemare
+https://github.com/cultupgaming/game_mod
 
-The exact source commit used to generate the release is written to `SOURCE.txt` inside the ZIP.
+For release verification, use `SOURCE.txt` inside the ZIP. The release script verifies that the local build commit exactly matches the published public branch head before packaging, then writes both the full commit SHA and a commit-pinned source URL into `SOURCE.txt`.
+
+The commit-pinned URL in `SOURCE.txt` is the authoritative source link for the packaged `RedDeadKnifemare.asi`; it does not move when `main` changes later.
 
 ## Bug Reports
 
