@@ -17,7 +17,7 @@ The Assassin Knife UI is mandatory for this release.
 
 MagicRDR is required only to patch the mandatory Assassin Knife UI into your own `mapres.rpf` override. It is not redistributed inside the Knifemare release ZIP.
 
-The package includes the additional Ultimate ASI Loader files needed for Knifemare's `update\game\mapres.rpf` UI override. It does not include or redistribute Rockstar's `mapres.rpf`.
+The package includes the additional Ultimate ASI Loader files needed for Knifemare's `update\game\mapres.rpf` UI override. It also includes Ultimate ASI Loader's upstream MIT `LICENSE.txt` beside those files. It does not include or redistribute Rockstar's `mapres.rpf`.
 
 ## Installation
 
@@ -59,6 +59,7 @@ Red Dead Redemption/
         ├── MagicRDR/
         │   └── DOWNLOAD-MAGICRDR.txt
         └── ultimate-asi-loader/
+            ├── LICENSE.txt
             ├── wininet.dll
             └── wininet.ini
 ```
