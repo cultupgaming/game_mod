@@ -118,7 +118,7 @@ Default release preset:
 
 The public release keeps this preset fixed; the former F9 inspection toggle is disabled.
 
-The ASI does not edit `fragments.rpf` or the physical throwing-knife model. The deploy script manages a separate `update\game\mapres.rpf` copy for the Assassin Knife UI artwork; Rockstar's original `game\mapres.rpf` remains untouched.
+The ASI does not edit `fragments.rpf` or the physical throwing-knife model. The release installer manages a separate `update\game\mapres.rpf` copy for the Assassin Knife UI artwork; Rockstar's original `game\mapres.rpf` remains untouched.
 
 ## Assassin Knife UI
 
@@ -129,47 +129,45 @@ The existing RDR1 throwing-knife weapon enum remains unchanged, but Knifemare pr
 - Those replacements preserve the stock WTD filenames, internal resource identities, dimensions, mipmaps and texture formats. Only the Throwing Knife artwork color is changed to red.
 - Release packaging reads those two checked-in WTDs directly and passes only them to MagicRDR. It does not use a nested asset ZIP and does not build or recolor WTDs on the player's machine.
 - MagicRDR replaces only those two Throwing Knife entries in the managed `update\game\mapres.rpf` copy. Rockstar's original `game\mapres.rpf` remains a read-only source.
-- Knifemare uses the same Ultimate ASI Loader update-folder path and ownership/backup safety model as Red Dead Possession.
-- Deploy and undeploy restore any pre-existing update archive / `wininet.dll` / `wininet.ini` only when the saved ownership hashes still match.
+- Knifemare uses Ultimate ASI Loader's update-folder file-overload path for the managed UI archive.
+- Install and uninstall restore any pre-existing update archive / `wininet.dll` / `wininet.ini` only when the tracked ownership hashes still match.
 - This UI change does not alter weapon enum 25, knife ammo, projectile behavior, targeting, teleport/execution logic, the physical knife model, or unrelated weapon artwork.
 
 ### UI test
 
-1. Close RDR completely and run `.\mods\rdr1\red-dead-knifemare\deploy.ps1`.
+1. Build the end-user package with `release.ps1`, extract the generated release ZIP into the RDR game folder, and run `Install.bat`.
 2. Equip the Throwing Knife and open the weapon wheel. Confirm the slot reads **Assassin Knife** and the original Throwing Knife silhouette is red.
 3. Keep the knife equipped, open **Weapons -> Organize and Compare**, and navigate to the knife. Confirm the panel reads **Assassin Knife** and the original knife artwork is red.
 4. Check several other weapon slots to make sure their labels and artwork remain stock.
 5. Throw Assassin Knife at a supported on-foot NPC and confirm the existing teleport/execution flow still works normally.
 
-## Build and developer deployment
+## Build and release packaging
 
-From PowerShell at the repository root, use the same mod-local layout as Bear of Redemption and Red Dead Possession:
+From PowerShell at the repository root, build the end-user package with the normal mod release script:
 
 ```powershell
-.\mods\rdr1\red-dead-knifemare\deploy.ps1
+.\mods\rdr1\red-dead-knifemare\release.ps1
 ```
 
-Use `-NoLaunch` to deploy without starting the game.
+The script requires a working RDR1 ScriptHook SDK and performs a clean x64 Release build. It validates the release configuration, mandatory Assassin Knife UI files, Ultimate ASI Loader files and license, then stages the installer and creates:
 
-The deploy script performs a clean x64 Release build, verifies the deployed ASI hash and writes build/deployment output under:
+```text
+mods\rdr1\red-dead-knifemare\release\Red-Dead-Knifemare-v<VERSION>.zip
+```
+
+Temporary build/staging output is written under:
 
 ```text
 mods\rdr1\red-dead-knifemare\build\
-  cmake\
-  logs\
+  release-cmake\
+  release-stage\
 ```
 
 That local `build/` directory is gitignored.
 
-To remove the developer build:
+The release script is restricted to `main` by default. When intentionally testing packaging from a review branch, use `-AllowNonMain`. Use `-Force` only when deliberately replacing an existing release ZIP.
 
-```powershell
-.\mods\rdr1\red-dead-knifemare\undeploy.ps1
-```
-
-The older root-level `deploy-red-dead-knifemare.ps1` and `undeploy-red-dead-knifemare.ps1` commands remain as compatibility wrappers and forward to the mod-local scripts.
-
-The undeploy script removes only Red Dead Knifemare managed files and leaves ScriptHookRDR, the ASI loader and other mods untouched.
+The generated package contains `Install.bat` and `Uninstall.bat`. MagicRDR is intentionally not redistributed; the installer tells the user where to download it and stops before changing game files if it is missing.
 
 ## Current play-test focus
 
@@ -192,4 +190,4 @@ Mounted/vehicle targets are currently unsupported and should be rejected safely.
 
 Steep or awkward terrain can still make contextual execution alignment less reliable. Release readiness depends on safe recovery in those situations rather than forcing every possible context to work.
 
-A standalone end-user ZIP/package is also still part of #96; the current PowerShell deployment workflow is for repository/development use.
+The public end-user ZIP is generated by `release.ps1`; remaining #96 work is focused on runtime hardening and release verification rather than creating a separate deployment workflow.
